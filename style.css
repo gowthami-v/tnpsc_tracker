@@ -1,0 +1,126 @@
+/* style.css */
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f0f4ff;
+  color: #1f2937;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background-color: #3b82f6; /* Indigo Blue */
+  color: white;
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+main {
+  padding: 1rem;
+}
+
+section {
+  background-color: #e0e7ff; /* Soft Indigo */
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+h2 {
+  margin-top: 0;
+  color: #1e40af;
+}
+
+input, button {
+  padding: 0.6rem;
+  margin: 0.3rem 0.5rem 0.5rem 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+input[type="text"], input[type="date"] {
+  width: calc(25% - 12px);
+  box-sizing: border-box;
+}
+
+button {
+  background-color: #10b981; /* Emerald Green */
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #059669;
+}
+
+#topic-list {
+
+  
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap; /* allows wrapping on small screens */
+
+
+
+}
+
+
+#topic-list .topic-card,
+#revisions-list .revision-card {
+ /* background-color: #beb7ff;  Light Purple */
+  padding: 0.8rem;
+  margin: 0.5rem 0;
+  width: calc(20% - 12px);
+  box-sizing: border-box; 
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+
+  
+  
+}
+
+.topic-card.completed {
+  background-color: #bbf7d0; /* Light green for completed */
+  
+}
+
+.topic-card .status {
+  font-weight: bold;
+  
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th, td {
+  border: 1px solid #cbd5e1;
+  padding: 0.75rem;
+  text-align: center;
+  background-color: white;
+}
+
+th {
+  background-color: #ede9fe; /* Very light purple */
+  font-weight: bold;
+}
+
+canvas {
+  width: 100% !important;
+  max-width: 600px;
+  margin: 1rem auto;
+  display: block;
+}
+
+@media (max-width: 600px) {
+  input, button {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Custom Revision Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #1f2937;
+    }
+    .form {
+      display: grid;
+      grid-template-columns: 2fr 3fr 2fr 1fr;
+      gap: 10px;
+      max-width: 900px;
+      margin: 0 auto;
+      margin-bottom: 20px;
+    }
+    input[type="text"], input[type="date"], input[type="search"] {
+      padding: 8px;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px;
+      background: #10b981;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    #search {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #3b82f6;
+      color: white;
+      font-size: 14px;
+    }
+    td input[type="checkbox"] {
+      transform: scale(1.2);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<button onclick="window.location.href='index.html'">Home</button>
+<h1>🔄 TNPSC Revision Tracker</h1>
+
+<div class="form">
+  <input type="text" id="subject" placeholder="Subject">
+  <input type="text" id="topic" placeholder="Topic Name">
+  <input type="date" id="completedDate">
+  <button onclick="addRevision()">Add</button>
+</div>
+
+<input type="search" id="search" placeholder="🔍 Search by subject or topic..." oninput="renderTable()">
+
+<h2>📅 Today’s Revisions</h2>
+<ul id="todayRevisions" style="padding-left: 20px; font-size: 16px;"></ul>
+
+<h2>📆 Revisions Dates </h2>
+
+<button onclick="exportToCSV()" style="margin: 10px; padding: 8px 16px; background-color: green; color: white; border: none; border-radius: 8px;">📤 Export to CSV</button>
+
+<!---
+<button onclick="smartReschedule()" style="margin: 10px; padding: 8px 16px; background-color: darkorange; color: white; border: none; border-radius: 8px;">🧠 Smart Reschedule Missed</button>
+ -->
+
+<table id="revisionTable">
+  <thead>
+    <tr>
+      <th>Subject</th>
+      <th>Topic</th>
+      <th>Completed</th>
+      <th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>R5</th>
+      <th>R6</th><th>R7</th><th>R8</th><th>R9</th><th>R10</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!---
+
+
+<div style="width: 90%; max-width: 700px; margin: 20px auto;">
+  <h3>Weekly Completion Analytics</h3>
+  <canvas id="weeklyChart"></canvas>
+  <h3>Monthly Completion Analytics</h3>
+  <canvas id="monthlyChart"></canvas>
+</div>
+-->
+<script>
+const revisionGaps = [1, 1, 1, 3, 5, 7, 15, 30, 30, 30];
+
+function formatDate(date) {
+  const yy = String(date.getFullYear()).slice(2);
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+function addRevision() {
+  const subject = document.getElementById('subject').value.trim();
+  const topic = document.getElementById('topic').value.trim();
+  const completedDate = document.getElementById('completedDate').value;
+
+  if (!subject || !topic || !completedDate) {
+    alert('Fill all fields');
+    return;
+  }
+
+  const base = new Date(completedDate);
+  const revisions = [];
+  let totalGap = 0;
+
+  revisionGaps.forEach(gap => {
+    totalGap += gap;
+    const nextDate = new Date(base);
+    nextDate.setDate(base.getDate() + totalGap);
+    revisions.push(formatDate(nextDate));
+  });
+
+  const entry = {
+    id: Date.now(),
+    subject,
+    topic,
+    completedDate,
+    revisions,
+    ticks: Array(10).fill(false)
+  };
+
+  const all = JSON.parse(localStorage.getItem('revisionData') || '[]');
+  all.push(entry);
+  localStorage.setItem('revisionData', JSON.stringify(all));
+  renderTable();
+  renderTodayRevisions();
+}
+
+function toggleCheckbox(id, index) {
+  const all = JSON.parse(localStorage.getItem('revisionData') || '[]');
+  const row = all.find(x => x.id === id);
+  if (row) {
+    row.ticks[index] = !row.ticks[index];
+    localStorage.setItem('revisionData', JSON.stringify(all));
+    renderTable();
+    renderTodayRevisions();
+  }
+}
+
+function renderTable() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const all = JSON.parse(localStorage.getItem('revisionData') || '[]');
+  const tbody = document.querySelector('#revisionTable tbody');
+  tbody.innerHTML = '';
+  
+
+  all
+    .filter(r => r.subject.toLowerCase().includes(search) || r.topic.toLowerCase().includes(search))
+    .forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.subject}</td>
+        <td>${row.topic}</td>
+        <td>${row.completedDate}</td>
+        ${row.revisions.map((rev, i) => `
+          <td>
+            <div>
+              <div>${rev}</div>
+              <input type="checkbox" ${row.ticks[i] ? 'checked' : ''} onclick="toggleCheckbox(${row.id}, ${i})">
+            </div>
+          </td>`).join('')}
+      `;
+      tbody.appendChild(tr);
+    });
+}
+
+function exportToCSV() {
+  const all = JSON.parse(localStorage.getItem('revisionData') || '[]');
+  if (all.length === 0) {
+    alert("No data to export!");
+    return;
+  }
+
+  function smartReschedule() {
+  const all = JSON.parse(localStorage.getItem('revisionData') || '[]');
+  const today = new Date();
+  let updated = false;
+
+  all.forEach(row => {
+    let base = new Date(row.completedDate);
+    let totalGap = 0;
+    row.revisions.forEach((revDate, index) => {
+      const revDateObj = new Date(revDate);
+      if (!row.ticks[index] && revDateObj < today) {
+        // Missed revision
+        totalGap += 1; // push to next available day
+        const newDate = new Date(today);
+        newDate.setDate(today.getDate() + totalGap);
+        row.revisions[index] = formatDate(newDate);
+        updated = true;
+      }
+    });
+  });
+
+  if (updated) {
+    localStorage.setItem('revisionData', JSON.stringify(all));
+    renderTable();
+    renderTodayRevisions();
+    alert("🔁 Missed revisions have been rescheduled!");
+  } else {
+    alert("✅ No missed revisions to reschedule.");
+  }
+}
+
+  const headers = ["Subject", "Topic", "Completed Date", ...Array.from({ length: 10 }, (_, i) => `R${i + 1}`), ...Array.from({ length: 10 }, (_, i) => `R${i + 1} Status`)];
+  const rows = all.map(row => {
+    return [
+      row.subject,
+      row.topic,
+      row.completedDate,
+      ...row.revisions,
+      ...row.ticks.map(t => t ? "✅" : "❌")
+    ];
+  });
+
+  let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" +
+    rows.map(e => e.join(",")).join("\n");
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "tnpsc_revision_tracker.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+
+// 🆕 Renders today's revision items
+function renderTodayRevisions() {
+  const today = formatDate(new Date());
+  const all = JSON.parse(localStorage.getItem('revisionData') || '[]');
+  const todayList = document.getElementById('todayRevisions');
+  todayList.innerHTML = '';
+
+  const matches = all.flatMap(row => 
+    row.revisions
+      .map((revDate, i) => ({
+        subject: row.subject,
+        topic: row.topic,
+        revNum: `R${i + 1}`,
+        date: revDate,
+        done: row.ticks[i]
+      }))
+      .filter(r => r.date === today)
+  );
+
+  if (matches.length === 0) {
+    todayList.innerHTML = "<li>No revisions scheduled for today 🎉</li>";
+  } else {
+    matches.forEach(item => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${item.revNum}</strong> - ${item.subject}: ${item.topic} 
+                      ${item.done ? '✅' : '<span style="color:red;">❌</span>'}`;
+      todayList.appendChild(li);
+    });
+  }
+}
+
+//weekly and monthly chart
+
+function getWeekNumber(date) {
+  const d = new Date(date);
+  const day = d.getDate();
+  return Math.ceil(day / 7); // 1-5 weeks approx
+}
+
+function getMonthYear(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
+}
+
+function prepareAnalytics() {
+  const all = JSON.parse(localStorage.getItem('revisionData') || '[]');
+
+  // Weekly data: { week1: count, week2: count ... }
+  const weeklyData = {};
+
+  // Monthly data: { "2025-06": count, "2025-07": count ... }
+  const monthlyData = {};
+
+  all.forEach(topic => {
+    topic.revisions.forEach((revDate, i) => {
+      const ticked = topic.ticks[i];
+      if (ticked) {
+        const weekNum = getWeekNumber(revDate);
+        const monthKey = getMonthYear(revDate);
+
+        weeklyData[`Week ${weekNum}`] = (weeklyData[`Week ${weekNum}`] || 0) + 1;
+        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+      }
+    });
+  });
+
+  // Prepare chart data arrays
+  const weeklyLabels = ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"];
+  const weeklyCounts = weeklyLabels.map(w => weeklyData[w] || 0);
+
+  const monthlyLabels = Object.keys(monthlyData).sort();
+  const monthlyCounts = monthlyLabels.map(m => monthlyData[m]);
+
+  // Draw charts
+  drawBarChart('weeklyChart', 'Weekly Completed Revisions', weeklyLabels, weeklyCounts);
+  drawBarChart('monthlyChart', 'Monthly Completed Revisions', monthlyLabels, monthlyCounts);
+}
+
+function drawBarChart(canvasId, title, labels, data) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (window[canvasId + 'Chart']) {
+    window[canvasId + 'Chart'].destroy();
+  }
+  window[canvasId + 'Chart'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Completed Revisions',
+        data,
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1,
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: title,
+          font: { size: 18 }
+        },
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          stepSize: 1
+        }
+      }
+    }
+  });
+}
+
+
+renderTable();
+renderTodayRevisions();
+prepareAnalytics();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</body>
+</html>

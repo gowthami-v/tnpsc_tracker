@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TNPSC Progress with % Completion</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #1e293b;
+    }
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      max-width: 1000px;
+      margin: 20px auto;
+    }
+    .input-grid div {
+      background: #e2e8f0;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 60px;
+      font-size: 16px;
+      text-align: center;
+    }
+    button {
+      margin: 20px;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .percent {
+      font-weight: bold;
+      color: #10b981;
+      font-size: 16px;
+    }
+    canvas {
+      max-width: 1000px;
+      margin: 30px auto;
+    }
+  </style>
+</head>
+<body>
+  <button onclick="window.location.href='index.html'">Home</button>
+  <h1>📊 TNPSC Progress with % Completion</h1>
+
+  <div class="input-grid" id="inputGrid"></div>
+
+  <button onclick="updateCharts()">Update Charts</button>
+
+  <canvas id="barChart" style="box-sizing: border-box; height: 630px; width: 661px;"></canvas>
+
+  <script>
+    const subjects = [
+      { name: "Science", total: 28 },
+      { name: "Geography", total: 22 },
+      { name: "History & INM", total: 28 },
+      { name: "Polity", total: 28 },
+      { name: "Economy & Unit 9", total: 37 },
+      { name: "Unit 8", total: 20 },
+      { name: "Maths", total: 41 },
+      { name: "Tamil", total: 142 }
+    ];
+
+    subjects.forEach(s => {
+      const saved = localStorage.getItem(s.name);
+      s.completed = saved ? parseInt(saved) : 0;
+    });
+
+    const grid = document.getElementById("inputGrid");
+
+    subjects.forEach((subject, index) => {
+      const box = document.createElement("div");
+      const percent = Math.round((subject.completed / subject.total) * 100);
+      box.innerHTML = `
+        <h3>${subject.name}</h3>
+        <input type="number" id="input-${index}" value="${subject.completed}" min="0" max="${subject.total}" />
+        <p>/ ${subject.total} topics</p>
+        <div class="percent" id="percent-${index}">${percent}%</div>
+      `;
+      grid.appendChild(box);
+    });
+
+    const ctx = document.getElementById("barChart").getContext("2d");
+
+    const barChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: subjects.map(s => s.name),
+        datasets: [
+          {
+            label: 'Completed',
+            backgroundColor: '#10b981',
+            data: subjects.map(s => s.completed)
+          },
+          {
+            label: 'Remaining',
+            backgroundColor: '#ef4444',
+            data: subjects.map(s => s.total - s.completed)
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Subject Progress with %'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    function updateCharts() {
+      subjects.forEach((subject, index) => {
+        const inputVal = parseInt(document.getElementById(`input-${index}`).value) || 0;
+        subject.completed = Math.min(inputVal, subject.total);
+        localStorage.setItem(subject.name, subject.completed);
+        const percent = Math.round((subject.completed / subject.total) * 100);
+        document.getElementById(`percent-${index}`).innerText = `${percent}%`;
+      });
+
+      barChart.data.datasets[0].data = subjects.map(s => s.completed);
+      barChart.data.datasets[1].data = subjects.map(s => s.total - s.completed);
+      barChart.update();
+    }
+  </script>
+
+</body>
+</html>
